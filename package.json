@@ -1,0 +1,13 @@
+{
+  "name": "haproxy2statsd",
+  "description": "Reads syslog from haproxy and sends individual request timing statistics to statsd",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/garo/haproxy2statsd.git"
+  },
+  "dependencies": {
+    "optimist" : "0.6.0"
+  },
+  "author": "Juho Makinen <juho.makinen@gmail.com>"
+}

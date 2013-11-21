@@ -1,13 +1,24 @@
 var dgram = require("dgram");
 var server = dgram.createSocket("udp4");
+var optimist = require('optimist')
+	.usage('Start listening on --listen port for haproxy udp syslog feed and sends statsd to --host')
+	.demand(['listen'])
+	.default('host', '127.0.0.1')
+	.default('port', 8125)
+	.describe('listen', 'udp port to listen for incoming haproxy syslog feed')
+	.describe('host', 'ip or hostname of statsd server')
+	.describe('port', 'port of statsd server')
+	
+var argv = optimist.argv;
 
-var prefix = 'haproxy';
+var prefix = argv.prefix;
+var syslog_port = argv.listen;
+var statsd_host = argv.host;
+var statsd_port = argv.port;
 
-var syslog_port = 5000;
 var client = dgram.createSocket('udp4');
-var statsd_host = "127.0.0.1";
-var statsd_port = 8125;
 
+console.log("Listening on port", syslog_port, "feeding statsd probes to", statsd_host + ":" + statsd_port);
 
 //          flags    ts              host          source      ts    front  back
 var r = /^<([0-9]+)>(.+ .+ .+:.+:.+) (.+)\[.+?\]: (.+:[0-9]+) \[.+\] (.+?) (.+?)\/.+? ([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+) /;
