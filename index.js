@@ -22,10 +22,10 @@ var statsd_port = argv.port;
 var client = dgram.createSocket('udp4');
 
 console.log("Listening on port", syslog_port, "feeding statsd probes to", statsd_host + ":" + statsd_port);
-
+// <150>Nov 21 13:48:33 haproxy[17590]: 127.0.0.1:8274 [21/Nov/2013:13:48:33.744] impact-fe comet-getcampaigns/node_1341-3500 0/0/2/37/40 200 9431 - - ---- 12/7/4/0/0 0/0 "GET 
 //          flags    ts              host          source      ts    front  back
-var r = /^<([0-9]+)>(.+ .+ .+:.+:.+) (.+)\[.+?\]: (.+:[0-9]+) \[.+\] (.+?) (.+?)\/(.+?) ([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+) /;
-
+//var r = /^<([0-9]+)>(.+ .+ .+:.+:.+) (.+)\[.+?\]: (.+:[0-9]+) \[.+\] (.+?) (.+?)\/(.+?) ([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+) /;
+var r = /^<(\d+)>.*?(\d+\.\d+\.\d+\.\d+):(\d+)\s\[(.+)\]\s([^\s]+)\s+([^\/]+)\/([^\s]+)\s(\d+)\/(\d+)\/(\d+)\/(\d+)\/(\d+)\s(\d+)\s(\d+)\s(.)\s(.)\s([^\s]+)\s(\d+)\/(\d+)\/(\d+)\/(\d+)\/(\d+)\s(\d+)\/(\d+)\s"([^\s]+)\s([^\s]+)/;
 var buf = new Buffer(1324);
 var pos = 0;
 var str = null;
@@ -39,8 +39,8 @@ server.on("message", function (msg, rinfo) {
 	if (!m) {
 		return;
 	}
-
-	var haproxy = m[3]; 
+	
+	var haproxy = "haproxy"; 
 	var frontend_name = m[5];
 	var backend_name = m[6];
 	var server_name = m[7];
@@ -49,7 +49,6 @@ server.on("message", function (msg, rinfo) {
 	var Tc = m[10];
 	var Tr = m[11];
 	var Tt = m[12];
-
 	if (server_name == "<NOSRV>") {
 		// frontend request, we aren't interested on these
 		return;
