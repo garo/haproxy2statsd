@@ -5,9 +5,12 @@ var optimist = require('optimist')
 	.demand(['listen'])
 	.default('host', '127.0.0.1')
 	.default('port', 8125)
+	.default('prefix', 'haproxy')
 	.describe('listen', 'udp port to listen for incoming haproxy syslog feed')
 	.describe('host', 'ip or hostname of statsd server')
 	.describe('port', 'port of statsd server')
+	.describe('prefix', 'prefix for statsd')
+
 	
 var argv = optimist.argv;
 
@@ -21,12 +24,15 @@ var client = dgram.createSocket('udp4');
 console.log("Listening on port", syslog_port, "feeding statsd probes to", statsd_host + ":" + statsd_port);
 
 //          flags    ts              host          source      ts    front  back
-var r = /^<([0-9]+)>(.+ .+ .+:.+:.+) (.+)\[.+?\]: (.+:[0-9]+) \[.+\] (.+?) (.+?)\/.+? ([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+) /;
+var r = /^<([0-9]+)>(.+ .+ .+:.+:.+) (.+)\[.+?\]: (.+:[0-9]+) \[.+\] (.+?) (.+?)\/(.+?) ([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+)\/([-0-9]+) /;
+
+var buf = new Buffer(1324);
+var pos = 0;
+var str = null;
 
 server.on("message", function (msg, rinfo) {
-
 	if (Math.floor((Math.random() * 10) + 1) != 10) {
-		return;
+	//	return;
 	}
 
 	var m = msg.toString().match(r);
@@ -37,47 +43,140 @@ server.on("message", function (msg, rinfo) {
 	var haproxy = m[3]; 
 	var frontend_name = m[5];
 	var backend_name = m[6];
-	var Tq = m[7];
-	var Tw = m[8];
-	var Tc = m[9];
-	var Tr = m[10];
-	var Tt = m[11];
+	var server_name = m[7];
+	var Tq = m[8];
+	var Tw = m[9];
+	var Tc = m[10];
+	var Tr = m[11];
+	var Tt = m[12];
 
-	var cmd = "";
+	if (server_name == "<NOSRV>") {
+		// frontend request, we aren't interested on these
+		return;
+	}
+
+
+	pos = 0;
+	str = null;
 
 	if (Tq == -1) {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tq-1|c\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tq-1|c\n", pos, 8);
 	} else {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tq:" + Tq + "|ms\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tq:", pos, 4);
+		str = Tq.toString();
+		pos += buf.write(str, pos, str.length);
+		pos += buf.write("|ms\n", pos, 4);
 	}
 
 	if (Tw == -1) {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tw-1|c\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tw-1|c\n", pos, 8);
 	} else {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tw:" + Tw + "|ms\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tw:", pos, 4);
+		str = Tw.toString();
+		pos += buf.write(str, pos, str.length);
+		pos += buf.write("|ms\n", pos, 4);
 	}
 
 	if (Tc == -1) {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tc-1|c\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tc-1|c\n", pos, 8);
 	} else {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tc:" + Tc + "|ms\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tc:", pos, 4);
+		str = Tc.toString();
+		pos += buf.write(str, pos, str.length);
+		pos += buf.write("|ms\n", pos, 4);
 	}
 
 	if (Tr == -1) {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tr-1|c\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tr-1|c\n", pos, 8);
 	} else {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tr:" + Tr + "|ms\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tr:", pos, 4);
+		str = Tr.toString();
+		pos += buf.write(str, pos, str.length);
+		pos += buf.write("|ms\n", pos, 4);
 	}
 
 	if (Tt == -1) {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tt-1|c\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tt-1|c\n", pos, 8);
 	} else {
-		cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tt:" + Tt + "|ms\n";
+		pos += buf.write(prefix, pos, prefix.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(haproxy, pos, haproxy.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(frontend_name, pos, frontend_name.length);
+		pos += buf.write(".", pos, 1);
+		pos += buf.write(backend_name, pos, backend_name.length);
+		pos += buf.write(".Tt:", pos, 4);
+		str = Tt.toString();
+		pos += buf.write(str, pos, str.length);
+		pos += buf.write("|ms\n", pos, 4);
 	}
 
-	var buf = new Buffer(cmd);
-
-	client.send(buf, 0, buf.length, statsd_port, statsd_host);
+	//console.log("pos", pos);
+	//console.log(buf.toString("utf8", 0, pos));
+	client.send(buf, 0, pos, statsd_port, statsd_host);
 	
 });
 
