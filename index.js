@@ -49,6 +49,13 @@ server.on("message", function (msg, rinfo) {
 	var Tc = m[10];
 	var Tr = m[11];
 	var Tt = m[12];
+	var actconn = m[18];
+	var feconn = m[19];
+	var beconn = m[20];
+	var srv_conn = m[21];
+	var retries = m[22];
+	var srv_queue = m[23];
+	var backend_queue = m[24];
 	if (server_name == "<NOSRV>") {
 		// frontend request, we aren't interested on these
 		return;
@@ -60,39 +67,57 @@ server.on("message", function (msg, rinfo) {
 	var cmd = "";
 
     if (Tq == -1) {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tq-1|c\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tq-1|c\n";
     } else {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tq:" + Tq + "|ms\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tq:" + Tq + "|ms\n";
     }
 
     if (Tw == -1) {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tw-1|c\n";
+      cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tw-1|c\n";
     } else {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tw:" + Tw + "|ms\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tw:" + Tw + "|ms\n";
     }
 
     if (Tc == -1) {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tc-1|c\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tc-1|c\n";
     } else {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tc:" + Tc + "|ms\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tc:" + Tc + "|ms\n";
     }
 
     if (Tr == -1) {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tr-1|c\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tr-1|c\n";
     } else {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tr:" + Tr + "|ms\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tr:" + Tr + "|ms\n";
     }
 
     if (Tt == -1) {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tt-1|c\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tt-1|c\n";
     } else {
-            cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tt:" + Tt + "|ms\n";
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".Tt:" + Tt + "|ms\n";
     }
+
+    if (actconn == -1) {
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".actconn-1|c\n";
+    } else {
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".actconn:" + actconn + "|ms\n";
+    }
+
+    cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".feconn:" + feconn + "|ms\n";
+    cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".beconn:" + beconn + "|ms\n";
+    cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".srv_conn:" + srv_conn + "|ms\n";
+
+    if (retries[0] == "+") {
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".retries_plus|c\n";
+    } else {
+        cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".retries:" + retries + "|ms\n";
+    }
+
+    cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".srv_queue:" + srv_queue + "|ms\n";
+    cmd += haproxy + "." + haproxy + "." + frontend_name + "." + backend_name + ".backend_queue:" + backend_queue + "|ms\n";
 
     var buf = new Buffer(cmd);
 
     client.send(buf, 0, buf.length, statsd_port, statsd_host);
-
 	
 });
 
